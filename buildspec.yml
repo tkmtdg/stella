@@ -1,0 +1,33 @@
+version: 0.2
+
+env:
+  variables:
+    SRC_DIR: src/github.com/tkmtdg/stella
+
+phases:
+  install:
+    commands:
+      - echo ${CODEBUILD_SRC_DIR}
+      - export GOPATH=${HOME}/go && echo ${GOPATH}
+      - export PATH=${GOPATH}/bin:${PATH} && echo ${PATH}
+      - go get -u github.com/golang/dep/cmd/dep
+      - type dep && dep version
+      - go get -u github.com/GeertJohan/go.rice/rice
+      - type rice
+  pre_build:
+    commands:
+      - mkdir -p ${GOPATH}/${SRC_DIR} && cd ${GOPATH}/${SRC_DIR}
+      - mv ${CODEBUILD_SRC_DIR}/* ${CODEBUILD_SRC_DIR}/.??* .
+      - dep ensure
+  build:
+    commands:
+      - rice clean
+      - rice embed-go
+      - GOARCH=amd64 GOOS=linux go build -o build/bin/application
+
+artifacts:
+  type: zip
+  files:
+    - bin/application
+    - Procfile
+  base-directory: ${GOPATH}/${SRC_DIR}/build
